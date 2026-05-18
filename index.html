@@ -2,1310 +2,885 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=landscape, orientation=landscape">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Haliltale</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #000;
-    overflow: hidden;
-    width: 100vw;
-    height: 100vh;
-    font-family: 'Courier New', monospace;
-    touch-action: none;
-  }
-  #gameCanvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-    image-rendering: pixelated;
-  }
-  #ui {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 10;
-  }
-  /* LOBBY */
-  #lobby {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    color: #fff;
-  }
-  #lobby h1 {
-    font-size: 5vw;
-    color: #ff4444;
-    text-shadow: 0 0 20px #ff0000;
-    margin-bottom: 6vh;
-    letter-spacing: 4px;
-  }
-  #lobbyBtns {
-    display: flex;
-    flex-direction: column;
-    gap: 2vh;
-  }
-  .lobbyBtn {
-    font-size: 3vw;
-    padding: 2vh 6vw;
-    background: transparent;
-    border: 2px solid #ff4444;
-    color: #fff;
-    cursor: pointer;
-    font-family: 'Courier New', monospace;
-    letter-spacing: 2px;
-    transition: all 0.2s;
-    pointer-events: all;
-  }
-  .lobbyBtn:hover { background: #ff4444; color: #000; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#000; overflow:hidden;
+  width:100vw; height:100vh;
+  font-family:'Courier New',monospace;
+  touch-action:none; user-select:none;
+}
+#gameCanvas { display:block; width:100vw; height:100vh; image-rendering:pixelated; }
 
-  /* DIALOGUE */
-  #dialogue {
-    position: fixed;
-    bottom: 5%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    background: rgba(0,0,0,0.85);
-    border: 2px solid #fff;
-    padding: 2vh 3vw;
-    color: #fff;
-    font-size: 2.5vw;
-    display: none;
-    z-index: 200;
-    text-align: center;
-    border-radius: 8px;
-  }
-  #dialogueChar {
-    width: 8vw;
-    height: auto;
-    display: block;
-    margin: 0 auto 1vh;
-  }
+/* LOBBY */
+#lobby {
+  position:fixed; inset:0; background:#000;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; z-index:100;
+}
+#lobby h1 {
+  font-size:clamp(24px,6vw,64px); color:#ff4444;
+  text-shadow:0 0 30px #ff0000,0 0 60px #ff000055;
+  margin-bottom:8vh; letter-spacing:6px;
+}
+#lobbyBtns { display:flex; flex-direction:column; gap:2vh; }
+.lobbyBtn {
+  font-size:clamp(14px,3vw,28px); padding:1.5vh 8vw;
+  background:transparent; border:2px solid #ff4444; color:#fff;
+  cursor:pointer; font-family:'Courier New',monospace;
+  letter-spacing:3px; transition:all .2s;
+}
+.lobbyBtn:hover,.lobbyBtn:active { background:#ff4444; color:#000; }
 
-  /* LOADING */
-  #loadingScreen {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: #000;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 300;
-    color: #fff;
-  }
-  #loadingScreen h2 { font-size: 4vw; margin-bottom: 3vh; }
-  #loadingBar {
-    width: 50%;
-    height: 3vh;
-    background: #222;
-    border: 2px solid #fff;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  #loadingFill {
-    height: 100%;
-    background: #ff4444;
-    width: 0%;
-    transition: width 0.05s linear;
-  }
+/* DIALOGUE */
+#dialogue {
+  position:fixed; bottom:4%; left:50%; transform:translateX(-50%);
+  width:85%; background:rgba(0,0,0,.92);
+  border:2px solid #ffffff77; padding:2vh 3vw; color:#fff;
+  font-size:clamp(12px,2.5vw,22px); display:none;
+  z-index:200; text-align:center; border-radius:10px;
+}
+#dialogueImg {
+  width:clamp(40px,8vw,80px); height:auto;
+  display:block; margin:0 auto 1vh; image-rendering:pixelated;
+}
 
-  /* HUD */
-  #hud {
-    position: fixed;
-    top: 2%;
-    left: 50%;
-    transform: translateX(-50%);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    z-index: 50;
-    pointer-events: none;
-  }
-  #hpLabel { color: #fff; font-size: 2vw; margin-bottom: 0.5vh; }
-  #hpBar {
-    width: 30vw;
-    height: 2.5vh;
-    background: #333;
-    border: 2px solid #fff;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  #hpFill {
-    height: 100%;
-    background: #22cc44;
-    transition: width 0.2s;
-  }
-  #weaponIcon {
-    margin-top: 1vh;
-    color: #ffcc00;
-    font-size: 2vw;
-  }
+/* LOADING */
+#loadingScreen {
+  position:fixed; inset:0; background:#000;
+  display:none; flex-direction:column;
+  align-items:center; justify-content:center; z-index:300; color:#fff;
+}
+#loadingScreen h2 { font-size:clamp(16px,4vw,40px); margin-bottom:4vh; }
+#loadingBar { width:60%; height:clamp(14px,2.5vh,24px); background:#222; border:2px solid #fff; border-radius:4px; overflow:hidden; }
+#loadingFill { height:100%; background:#ff4444; width:0; }
 
-  /* PHONE UI */
-  #phoneUI {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%,-50%);
-    width: 40vw;
-    background: #111;
-    border: 3px solid #555;
-    border-radius: 12px;
-    padding: 2vh 2vw;
-    display: none;
-    z-index: 400;
-    color: #fff;
-    pointer-events: all;
-  }
-  #phoneUI h3 { text-align: center; font-size: 2.5vw; margin-bottom: 2vh; color: #aaf; }
-  .phoneApp {
-    display: inline-block;
-    width: 30%;
-    text-align: center;
-    padding: 1.5vh 0;
-    border: 1px solid #444;
-    margin: 1%;
-    font-size: 1.8vw;
-    border-radius: 6px;
-    cursor: pointer;
-    background: #222;
-  }
-  .phoneApp:hover { background: #334; }
-  #closePhone {
-    display: block;
-    margin: 2vh auto 0;
-    background: #cc2222;
-    border: none;
-    color: #fff;
-    padding: 1vh 3vw;
-    font-size: 2vw;
-    cursor: pointer;
-    border-radius: 6px;
-    pointer-events: all;
-  }
+/* HUD */
+#hud {
+  position:fixed; top:2%; left:50%; transform:translateX(-50%);
+  display:none; flex-direction:column; align-items:center;
+  z-index:50; pointer-events:none;
+}
+#hpLabel { color:#fff; font-size:clamp(10px,2vw,18px); margin-bottom:4px; }
+#hpBar { width:clamp(160px,30vw,320px); height:clamp(10px,2.5vh,22px); background:#333; border:2px solid #fff; border-radius:4px; overflow:hidden; }
+#hpFill { height:100%; background:#22cc44; transition:width .2s,background .2s; }
+#weaponIcon { margin-top:6px; color:#ffcc00; font-size:clamp(10px,2vw,18px); }
 
-  /* MOBILE CONTROLS */
-  #mobileControls {
-    position: fixed;
-    bottom: 3%;
-    width: 100%;
-    display: none;
-    justify-content: space-between;
-    padding: 0 3vw;
-    z-index: 50;
-    pointer-events: none;
-  }
-  #dpad {
-    display: grid;
-    grid-template-columns: repeat(3, 12vw);
-    grid-template-rows: repeat(3, 12vw);
-    gap: 1vw;
-    pointer-events: all;
-  }
-  .dpadBtn {
-    background: rgba(255,255,255,0.15);
-    border: 2px solid rgba(255,255,255,0.4);
-    border-radius: 8px;
-    color: #fff;
-    font-size: 4vw;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-    pointer-events: all;
-  }
-  #actionBtns {
-    display: flex;
-    flex-direction: column;
-    gap: 2vw;
-    align-items: flex-end;
-    pointer-events: all;
-  }
-  .actionBtn {
-    width: 16vw;
-    height: 16vw;
-    background: rgba(255,80,80,0.25);
-    border: 2px solid rgba(255,80,80,0.6);
-    border-radius: 50%;
-    color: #fff;
-    font-size: 3vw;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    user-select: none;
-    -webkit-user-select: none;
-    pointer-events: all;
-  }
+/* PHONE */
+#phoneUI {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:clamp(200px,45vw,380px); background:#111;
+  border:3px solid #555; border-radius:14px;
+  padding:2vh 3vw; display:none; z-index:400; color:#fff; pointer-events:all;
+}
+#phoneUI h3 { text-align:center; font-size:clamp(14px,2.5vw,22px); margin-bottom:2vh; color:#aaf; }
+.phoneApp {
+  display:inline-block; width:30%; text-align:center;
+  padding:1.2vh 0; border:1px solid #444; margin:1%;
+  font-size:clamp(9px,1.8vw,16px); border-radius:6px; cursor:pointer; background:#222;
+}
+.phoneApp:hover { background:#334; }
+#closePhone {
+  display:block; margin:2vh auto 0; background:#cc2222; border:none;
+  color:#fff; padding:1vh 4vw; font-size:clamp(11px,2vw,18px);
+  cursor:pointer; border-radius:6px;
+}
 
-  /* GAME OVER / WIN */
-  #endScreen {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.92);
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 500;
-    color: #fff;
-    text-align: center;
-    padding: 5%;
-  }
-  #endScreen h1 { font-size: 5vw; margin-bottom: 3vh; color: #ffcc00; }
-  #endScreen p { font-size: 2.5vw; line-height: 2; }
-  #endScreen button {
-    margin-top: 4vh;
-    font-size: 2.5vw;
-    padding: 1.5vh 4vw;
-    background: #ff4444;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    border-radius: 6px;
-    font-family: 'Courier New', monospace;
-    pointer-events: all;
-  }
+/* MOBILE CONTROLS */
+#mobileControls {
+  position:fixed; bottom:2%; width:100%;
+  display:none; justify-content:space-between;
+  padding:0 3vw; z-index:50; pointer-events:none; align-items:flex-end;
+}
+#dpad {
+  display:grid;
+  grid-template-columns:repeat(3,clamp(44px,11vw,76px));
+  grid-template-rows:repeat(3,clamp(44px,11vw,76px));
+  gap:2px; pointer-events:all;
+}
+.dpadBtn {
+  background:rgba(255,255,255,.12); border:2px solid rgba(255,255,255,.35);
+  border-radius:8px; color:#fff; font-size:clamp(16px,4vw,28px);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; pointer-events:all;
+}
+#actionBtns { display:flex; flex-direction:column; gap:2vw; align-items:flex-end; pointer-events:all; }
+.actionBtn {
+  width:clamp(48px,14vw,90px); height:clamp(48px,14vw,90px);
+  background:rgba(255,80,80,.2); border:2px solid rgba(255,80,80,.5);
+  border-radius:50%; color:#fff; font-size:clamp(9px,2.2vw,16px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; pointer-events:all; text-align:center;
+}
+#phoneActionBtn { background:rgba(80,180,255,.2); border-color:rgba(80,180,255,.5); }
+
+/* END */
+#endScreen {
+  position:fixed; inset:0; background:rgba(0,0,0,.93);
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  z-index:500; color:#fff; text-align:center; padding:5%;
+}
+#endScreen h1 { font-size:clamp(20px,5vw,52px); margin-bottom:3vh; color:#ffcc00; }
+#endScreen p { font-size:clamp(12px,2.5vw,22px); line-height:2; }
+#endScreen button {
+  margin-top:4vh; font-size:clamp(12px,2.5vw,20px); padding:1.5vh 5vw;
+  background:#ff4444; border:none; color:#fff; cursor:pointer;
+  border-radius:6px; font-family:'Courier New',monospace;
+}
+
+/* DAMAGE FLASH */
+#dmgFlash { position:fixed; inset:0; background:rgba(255,0,0,.3); display:none; z-index:80; pointer-events:none; }
+
+/* APPLE HINT */
+#appleHint {
+  position:fixed; top:14%; left:50%; transform:translateX(-50%);
+  color:#88ff88; font-size:clamp(11px,2vw,18px);
+  background:rgba(0,70,0,.8); padding:6px 18px;
+  border-radius:8px; display:none; z-index:60; pointer-events:none;
+}
 </style>
 </head>
 <body>
-
-<!-- CANVAS -->
 <canvas id="gameCanvas"></canvas>
 
-<!-- LOBBY -->
 <div id="lobby">
   <h1>HALİLTALE</h1>
   <div id="lobbyBtns">
-    <button class="lobbyBtn" onclick="startGame()">OYNA</button>
-    <button class="lobbyBtn" onclick="openMarket()">MARKET</button>
-    <button class="lobbyBtn" onclick="window.close()">ÇIK</button>
+    <button class="lobbyBtn" id="btnOyna">OYNA</button>
+    <button class="lobbyBtn" id="btnMarket">MARKET</button>
+    <button class="lobbyBtn" id="btnCik">ÇIK</button>
   </div>
 </div>
 
-<!-- DIALOGUE -->
 <div id="dialogue">
-  <img id="dialogueChar" src="" alt="">
+  <img id="dialogueImg" src="" alt="">
   <span id="dialogueText"></span>
 </div>
 
-<!-- LOADING -->
 <div id="loadingScreen">
   <h2>Yükleniyor...</h2>
   <div id="loadingBar"><div id="loadingFill"></div></div>
 </div>
 
-<!-- HUD -->
 <div id="hud">
   <div id="hpLabel">CAN: <span id="hpNum">50</span></div>
   <div id="hpBar"><div id="hpFill" style="width:100%"></div></div>
   <div id="weaponIcon">Silah: Yok</div>
 </div>
 
-<!-- PHONE UI -->
 <div id="phoneUI">
   <h3>📱 Telefon</h3>
-  <div class="phoneApp" onclick="phoneApp('notdefteri')">📝 Not Defteri</div>
-  <div class="phoneApp" onclick="phoneApp('kamera')">📷 Kamera</div>
-  <div class="phoneApp" onclick="phoneApp('fotograflar')">🖼️ Fotoğraflar</div>
-  <div class="phoneApp" onclick="phoneApp('mesajlar')">💬 Mesajlar</div>
-  <div class="phoneApp" onclick="phoneApp('muzik')">🎵 Müzik</div>
-  <div class="phoneApp" onclick="phoneApp('ayarlar')">⚙️ Ayarlar</div>
-  <button id="closePhone" onclick="closePhone()">Kapat</button>
+  <div class="phoneApp" onclick="phoneApp('Not Defteri')">📝 Not</div>
+  <div class="phoneApp" onclick="phoneApp('Kamera')">📷 Kamera</div>
+  <div class="phoneApp" onclick="phoneApp('Fotoğraflar')">🖼️ Foto</div>
+  <div class="phoneApp" onclick="phoneApp('Mesajlar')">💬 Mesaj</div>
+  <div class="phoneApp" onclick="phoneApp('Müzik')">🎵 Müzik</div>
+  <div class="phoneApp" onclick="phoneApp('Ayarlar')">⚙️ Ayar</div>
+  <button id="closePhone">Kapat</button>
 </div>
 
-<!-- MOBILE CONTROLS -->
 <div id="mobileControls">
   <div id="dpad">
-    <div></div>
-    <div class="dpadBtn" ontouchstart="keys['ArrowUp']=true" ontouchend="keys['ArrowUp']=false">▲</div>
-    <div></div>
-    <div class="dpadBtn" ontouchstart="keys['ArrowLeft']=true" ontouchend="keys['ArrowLeft']=false">◄</div>
-    <div></div>
-    <div class="dpadBtn" ontouchstart="keys['ArrowRight']=true" ontouchend="keys['ArrowRight']=false">►</div>
-    <div></div>
-    <div class="dpadBtn" ontouchstart="keys['ArrowDown']=true" ontouchend="keys['ArrowDown']=false">▼</div>
-    <div></div>
+    <div></div><div class="dpadBtn" id="dUp">▲</div><div></div>
+    <div class="dpadBtn" id="dLeft">◄</div><div></div><div class="dpadBtn" id="dRight">►</div>
+    <div></div><div class="dpadBtn" id="dDown">▼</div><div></div>
   </div>
   <div id="actionBtns">
-    <div class="actionBtn" id="jumpBtn" ontouchstart="doJump()">↑ ZIPLA</div>
-    <div class="actionBtn" id="attackBtn" ontouchstart="doAttack()">⚔ VURU</div>
-    <div class="actionBtn" id="phoneBtn" ontouchstart="openPhone()" style="background:rgba(80,180,255,0.25);border-color:rgba(80,180,255,0.6);">📱</div>
+    <div class="actionBtn" id="jumpBtn">↑<br>ZIPLA</div>
+    <div class="actionBtn" id="attackBtn">⚔<br>VURU</div>
+    <div class="actionBtn" id="phoneActionBtn">📱</div>
   </div>
 </div>
 
-<!-- END SCREEN -->
 <div id="endScreen">
-  <h1>🎉 TEBRİKLER! 🎉</h1>
-  <p>Bu oyun bir özel deneydir!<br>Nifugames'in diğer oyunları ile bağlantısı yoktur!<br>Teşekkürler.</p>
-  <button onclick="goToLobby()">Girişe Dön</button>
+  <h1 id="endTitle">🎉 TEBRİKLER! 🎉</h1>
+  <p id="endText">Bu oyun bir özel deneydir!<br>Nifugames'in diğer oyunları ile bağlantısı yoktur!<br>Teşekkürler.</p>
+  <button onclick="location.reload()">Girişe Dön</button>
 </div>
 
+<div id="dmgFlash"></div>
+<div id="appleHint">🍎 +2.5 CAN!</div>
+
 <script>
-// ========== ASSETS ==========
-const IMGS = {};
-const SOUNDS = {};
-const IMG_NAMES = [
-  'player','nabel','friend3','testere','zombi','kafkaous','okarun','silah'
-];
-const IMG_FILES = {
-  player: 'Ekran_görüntüsü_2026-05-18_230844-removebg-preview.png',
-  nabel: 'Nabel_face.png',
-  friend3: 'Nabel_friend3.png',
-  testere: 'testere.png',
-  zombi: 'zombi.png',
-  kafkaous: 'kafkaous.png',
-  okarun: 'okarun.png',
-  silah: 'silah.png'
+// ============================
+// ASSET PATHS
+// Klasör yapısına göre:
+//   halil/index.html
+//   halil/Ekran_görüntüsü_2026-05-18_230844-removebg-preview.png
+//   halil/okarun.png
+//   halil/silah.png
+//   halil/Textures/Nabel_face.png
+//   halil/Textures/Nabel_friend3.png
+//   halil/Textures/testere.png
+//   halil/Textures/zombi.png
+//   halil/Textures/kafkaous.png
+//   halil/Sounds/analobi.wav  ...vb.
+// ============================
+const IMG_SRC = {
+  player:   'Ekran_görüntüsü_2026-05-18_230844-removebg-preview.png',
+  okarun:   'okarun.png',
+  silah:    'silah.png',
+  nabel:    'Textures/Nabel_face.png',
+  friend3:  'Textures/Nabel_friend3.png',
+  testere:  'Textures/testere.png',
+  zombi:    'Textures/zombi.png',
+  kafkaous: 'Textures/kafkaous.png',
 };
-const SND_FILES = {
-  analobi: 'Sounds/analobi.wav',
-  lobises2: 'Sounds/lobises2.wav',
-  muzik1: 'Sounds/muzik1.wav',
-  nabelvs: 'Sounds/nabelvs.wav',
+const SND_SRC = {
+  analobi:     'Sounds/analobi.wav',
+  lobises2:    'Sounds/lobises2.wav',
+  muzik1:      'Sounds/muzik1.wav',
+  nabelvs:     'Sounds/nabelvs.wav',
   savasmuzigi: 'Sounds/savasmuzigi.wav',
-  telefonses: 'Sounds/telefonses.wav',
-  ozelcagri: 'Sounds/özelvscagrisim.wav'
+  telefonses:  'Sounds/telefonses.wav',
+  ozelcagri:   'Sounds/özelvscagrisim.wav',
 };
 
-function loadAssets(cb) {
-  let loaded = 0;
-  const total = Object.keys(IMG_FILES).length + Object.keys(SND_FILES).length;
-  function tick() { loaded++; if(loaded >= total) cb(); }
-  for(const [k,f] of Object.entries(IMG_FILES)) {
-    const img = new Image();
-    img.src = f;
-    img.onload = img.onerror = () => { IMGS[k] = img; tick(); };
+const IMGS={}, SNDS={};
+function loadAll(cb){
+  let done=0;
+  const total=Object.keys(IMG_SRC).length+Object.keys(SND_SRC).length;
+  const tick=()=>{if(++done>=total)cb();};
+  for(const[k,s]of Object.entries(IMG_SRC)){
+    const i=new Image(); i.onload=i.onerror=()=>{IMGS[k]=i;tick();}; i.src=s;
   }
-  for(const [k,f] of Object.entries(SND_FILES)) {
-    const a = new Audio(f);
-    a.preload = 'auto';
-    SOUNDS[k] = a;
-    a.addEventListener('canplaythrough', tick, {once:true});
-    a.addEventListener('error', tick, {once:true});
+  for(const[k,s]of Object.entries(SND_SRC)){
+    const a=new Audio();
+    const go=()=>{SNDS[k]=a;tick();};
+    a.addEventListener('canplaythrough',go,{once:true});
+    a.addEventListener('error',go,{once:true});
+    a.src=s; a.load();
   }
 }
 
-function playSound(name, loop=false) {
-  stopAllSounds();
-  const s = SOUNDS[name];
-  if(!s) return;
-  s.currentTime = 0;
-  s.loop = loop;
-  s.play().catch(()=>{});
+let bgm=null;
+function playBGM(k,loop=true){
+  if(bgm){bgm.pause();bgm.currentTime=0;}
+  if(!SNDS[k])return; bgm=SNDS[k]; bgm.loop=loop; bgm.currentTime=0; bgm.play().catch(()=>{});
 }
-function stopAllSounds() {
-  for(const s of Object.values(SOUNDS)) { s.pause(); s.currentTime = 0; }
-}
+function stopBGM(){if(bgm){bgm.pause();bgm.currentTime=0;}bgm=null;}
+function playSFX(k){if(!SNDS[k])return;const c=SNDS[k].cloneNode();c.play().catch(()=>{});}
 
-// ========== CANVAS ==========
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+// ============================
+// CANVAS
+// ============================
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+let groundY;
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;groundY=canvas.height*.72;}
+window.addEventListener('resize',resize); resize();
 
-// ========== GAME STATE ==========
-let gamePhase = 'lobby'; // lobby, intro, loading, wave1, nabelPass, wave2, kafkaous, okarun, finalWave, nabelFinal
-let keys = {};
-let player = null;
-let enemies = [];
-let bullets = [];
-let particles = [];
-let currentWeapon = 'none'; // none, testere, silah
-let maxHp = 50, hp = 50;
-let jumpVel = 0, isJumping = false;
-let groundY = 0;
-let dialogueQueue = [];
-let dialogueActive = false;
-let introStep = 0;
-let nabelIntroTimer = 0;
-let nabelPassDone = false;
-let nabelPassTimer = 0;
-let nabelPassX = 0;
-let gameStarted = false;
-let friend3Entering = false;
-let friend3X = 0;
-let friend3Timer = 0;
-let nabelClones = [];
-let nabelMaxClones = 5;
-let nabelHp = 10;
-let nabelCloneHp = 10;
-let kafkaousHp = 100;
-let kafkaousClones = [];
-let okarunHp = 350;
-let okarunPhase = false;
-let phoneAvailable = false;
-let phoneOpen = false;
-let finalNabelCount = 3; // starts at 3, drops to 1 when <=3
-let wave2Done = false;
-let kafkaousDead = false;
-let okarunDead = false;
-let finalWaveActive = false;
-let nabelFinalActive = false;
-let nabelFinalHp = 20;
-let nabelFinalClones = [];
-let nabelFinalMax = 5;
+// ============================
+// GAME STATE
+// ============================
+let phase='lobby';
+let keys={};
+let player=null;
+let enemies=[], bullets=[], parts=[], apples=[];
+let hp=50, maxHp=50;
+let weapon='none';
+let dialogueActive=false;
 
-// ========== PLAYER ==========
-function createPlayer() {
-  groundY = canvas.height * 0.75;
-  return {
-    x: canvas.width * 0.2,
-    y: groundY,
-    w: canvas.width * 0.06,
-    h: canvas.height * 0.15,
-    vx: 0,
-    vy: 0,
-    onGround: true,
-    facing: 1,
-    attackCooldown: 0,
-    invincible: 0
-  };
-}
+// intro helpers
+let nabelExitX=-9999, nabelExitOn=false;
+let f3X=-9999, f3Angle=0, f3On=false;
+let nabelPassX=-9999, nabelPassOn=false;
 
-// ========== INPUT ==========
-window.addEventListener('keydown', e => {
-  keys[e.key] = true;
-  if(e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') doJump();
-  if(e.key === 'x' || e.key === 'X' || e.key === 'Enter') doAttack();
-  if(e.key === 'p' || e.key === 'P') openPhone();
+// wave flags
+let w1done=false, w2done=false, kdone=false, finalAllDead=false;
+let phoneAvailable=false;
+
+// nabel final
+let nfClones=[], nfPhase=false;
+
+// apple spawn interval ref
+let appleInterval=null;
+
+// ============================
+// INPUT
+// ============================
+window.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(['ArrowUp','w','W',' '].includes(e.key))tryJump();
+  if(['x','X','Enter'].includes(e.key))doAttack();
+  if(['p','P'].includes(e.key))openPhone();
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();
 });
-window.addEventListener('keyup', e => { keys[e.key] = false; });
+window.addEventListener('keyup',e=>keys[e.key]=false);
 
-canvas.addEventListener('click', e => {
-  if(gameStarted && !dialogueActive) {
-    if(currentWeapon === 'none') {
-      currentWeapon = 'testere';
-      updateWeaponIcon();
-    } else {
-      doAttack();
-    }
-  }
+function addHold(id,key){
+  const el=document.getElementById(id);
+  el.addEventListener('touchstart',e=>{e.preventDefault();keys[key]=true;},{passive:false});
+  el.addEventListener('touchend',e=>{e.preventDefault();keys[key]=false;},{passive:false});
+}
+addHold('dUp','ArrowUp'); addHold('dDown','ArrowDown');
+addHold('dLeft','ArrowLeft'); addHold('dRight','ArrowRight');
+document.getElementById('jumpBtn').addEventListener('touchstart',e=>{e.preventDefault();tryJump();},{passive:false});
+document.getElementById('attackBtn').addEventListener('touchstart',e=>{e.preventDefault();doAttack();},{passive:false});
+document.getElementById('phoneActionBtn').addEventListener('touchstart',e=>{e.preventDefault();openPhone();},{passive:false});
+canvas.addEventListener('click',()=>{
+  if(!player||dialogueActive)return;
+  if(weapon==='none'){weapon='testere';updateWeapon();}
+  else doAttack();
 });
+document.getElementById('closePhone').onclick=()=>document.getElementById('phoneUI').style.display='none';
 
-function doJump() {
-  if(!player || !player.onGround) return;
-  player.vy = -canvas.height * 0.022;
-  player.onGround = false;
-  isJumping = true;
+// ============================
+// PLAYER
+// ============================
+function mkPlayer(){
+  return{x:canvas.width*.15,y:groundY,w:canvas.width*.06,h:canvas.height*.16,
+         vy:0,onGround:true,facing:1,atkCD:0,invCD:0};
 }
-
-function doAttack() {
-  if(!player || player.attackCooldown > 0 || dialogueActive) return;
-  player.attackCooldown = 30;
-  if(currentWeapon === 'testere') {
-    meleeAttack(80);
-  } else if(currentWeapon === 'silah') {
-    shoot();
-  }
+function tryJump(){if(!player||!player.onGround)return;player.vy=-canvas.height*.024;player.onGround=false;}
+function doAttack(){
+  if(!player||player.atkCD>0||dialogueActive)return;
+  player.atkCD=28;
+  if(weapon==='testere')meleeHit(88,10);
+  else if(weapon==='silah')fireBullet();
 }
-
-function meleeAttack(range) {
-  const px = player.x + (player.w/2);
-  const py = player.y + (player.h/2);
-  let hit = false;
-  for(const e of enemies) {
-    if(!e.alive) continue;
-    const ex = e.x + e.w/2, ey = e.y + e.h/2;
-    if(Math.abs(ex-px) < range + e.w/2 && Math.abs(ey-py) < e.h) {
-      e.hp -= 10;
-      spawnParticle(ex, ey, '#ff0000');
-      if(e.hp <= 0) { e.alive = false; e.deathTimer = 60; }
-      hit = true;
+function meleeHit(rng,dmg){
+  const cx=player.x+player.w/2,cy=player.y+player.h/2;
+  for(const e of enemies){
+    if(!e.alive)continue;
+    if(Math.abs(e.x+e.w/2-cx)<rng&&Math.abs(e.y+e.h/2-cy)<e.h*.8){
+      e.hp-=dmg;burst(e.x+e.w/2,e.y+e.h/2,'#ff3300');
+      if(e.hp<=0)killEnemy(e);
     }
   }
-  // nabel clones
-  if(nabelFinalActive) {
-    for(const n of nabelFinalClones) {
-      if(!n.alive) continue;
-      if(Math.abs((n.x+n.w/2)-px) < range+n.w/2 && Math.abs((n.y+n.h/2)-py)<n.h) {
-        n.hp -= 10;
-        spawnParticle(n.x+n.w/2, n.y+n.h/2, '#00ccff');
-        if(n.hp<=0) n.alive=false;
-      }
+  for(const n of nfClones){
+    if(!n.alive)continue;
+    if(Math.abs(n.x+n.w/2-cx)<rng&&Math.abs(n.y+n.h/2-cy)<n.h*.8){
+      n.hp-=dmg;burst(n.x+n.w/2,n.y+n.h/2,'#00ccff');
+      if(n.hp<=0){n.alive=false;onNabelCloneDie();}
     }
   }
 }
-
-function shoot() {
-  bullets.push({
-    x: player.x + player.w/2,
-    y: player.y + player.h/2,
-    vx: player.facing * canvas.width * 0.012,
-    vy: 0,
-    dmg: 5,
-    fromPlayer: true
-  });
+function fireBullet(){
+  bullets.push({x:player.x+player.w/2,y:player.y+player.h*.4,
+                vx:player.facing*canvas.width*.013,vy:0,dmg:5,own:true});
 }
-
-// ========== PARTICLES ==========
-function spawnParticle(x, y, color) {
-  for(let i=0;i<6;i++) {
-    particles.push({
-      x, y,
-      vx: (Math.random()-0.5)*5,
-      vy: (Math.random()-0.5)*5,
-      life: 30,
-      color
-    });
-  }
-}
-
-// ========== ENEMY HELPERS ==========
-function spawnZombie(x) {
-  enemies.push({
-    type: 'zombi', img: 'zombi', hp: 30, maxHp: 30, alive: true,
-    x: x || canvas.width * 0.85, y: groundY,
-    w: canvas.width * 0.07, h: canvas.height * 0.16,
-    speed: canvas.width * 0.003, attackCooldown: 0, deathTimer: 0
-  });
-}
-
-function spawnKafkaous(x) {
-  enemies.push({
-    type: 'kafkaous', img: 'kafkaous', hp: kafkaousHp, maxHp: 100, alive: true,
-    x: x || canvas.width * 0.75, y: groundY,
-    w: canvas.width * 0.09, h: canvas.height * 0.22,
-    speed: canvas.width * 0.002, attackCooldown: 0, deathTimer: 0,
-    cloneTimer: 0, teleportTimer: 0, shootTimer: 0, sawTimer: 0,
-    isClone: false
-  });
-}
-
-function spawnFriend3(x) {
-  enemies.push({
-    type: 'friend3', img: 'friend3', hp: 999, maxHp: 999, alive: true,
-    x: x || canvas.width * 0.85, y: groundY,
-    w: canvas.width * 0.07, h: canvas.height * 0.15,
-    speed: canvas.width * 0.002, attackCooldown: 0, deathTimer: 0,
-    stealing: false, stealDone: false
-  });
-}
-
-// ========== UI HELPERS ==========
-function updateHud() {
-  document.getElementById('hpNum').textContent = hp;
-  const pct = Math.max(0, hp / maxHp * 100);
-  document.getElementById('hpFill').style.width = pct + '%';
-  document.getElementById('hpFill').style.background = pct > 50 ? '#22cc44' : pct > 25 ? '#ffcc00' : '#ff2222';
-}
-
-function updateWeaponIcon() {
-  const labels = { none: 'Silah: Yok', testere: 'Silah: 🪚 Testere', silah: 'Silah: 🔫 Tabanca' };
-  document.getElementById('weaponIcon').textContent = labels[currentWeapon] || '';
-}
-
-function showDialogue(imgKey, text, duration, cb) {
-  const d = document.getElementById('dialogue');
-  const di = document.getElementById('dialogueChar');
-  const dt = document.getElementById('dialogueText');
-  d.style.display = 'block';
-  dialogueActive = true;
-  di.src = imgKey ? IMG_FILES[imgKey] || '' : '';
-  di.style.display = imgKey ? 'block' : 'none';
-  dt.textContent = text;
-  setTimeout(() => {
-    d.style.display = 'none';
-    dialogueActive = false;
-    if(cb) cb();
-  }, duration);
-}
-
-function hideDialogue() {
-  document.getElementById('dialogue').style.display = 'none';
-  dialogueActive = false;
-}
-
-function showLoading(cb) {
-  const ls = document.getElementById('loadingScreen');
-  ls.style.display = 'flex';
-  const fill = document.getElementById('loadingFill');
-  let pct = 0;
-  const iv = setInterval(() => {
-    pct += 2;
-    fill.style.width = pct + '%';
-    if(pct >= 100) {
-      clearInterval(iv);
-      setTimeout(() => {
-        ls.style.display = 'none';
-        if(cb) cb();
-      }, 300);
+function updatePlayer(dt){
+  if(!player)return;
+  const spd=canvas.width*.006;
+  if(keys['ArrowLeft']||keys['a']||keys['A']){player.x-=spd*dt;player.facing=-1;}
+  if(keys['ArrowRight']||keys['d']||keys['D']){player.x+=spd*dt;player.facing=1;}
+  player.vy+=1.1*dt; player.y+=player.vy*dt;
+  if(player.y>=groundY){player.y=groundY;player.vy=0;player.onGround=true;}
+  player.x=Math.max(0,Math.min(canvas.width-player.w,player.x));
+  if(player.atkCD>0)player.atkCD-=dt;
+  if(player.invCD>0)player.invCD-=dt;
+  // apple pick
+  for(let i=apples.length-1;i>=0;i--){
+    const a=apples[i];
+    if(Math.abs(a.x-(player.x+player.w/2))<42&&Math.abs(a.y-(player.y+player.h*.5))<55){
+      hp=Math.min(maxHp,hp+2.5); updateHUD(); apples.splice(i,1); showAppleHint();
     }
-  }, 40);
-}
-
-function openPhone() {
-  if(!phoneAvailable || phoneOpen) return;
-  phoneOpen = true;
-  playSound('telefonses');
-  document.getElementById('phoneUI').style.display = 'block';
-}
-
-function closePhone() {
-  phoneOpen = false;
-  document.getElementById('phoneUI').style.display = 'none';
-  stopAllSounds();
-}
-
-function phoneApp(name) {
-  alert('📱 ' + name + ' açıldı!');
-}
-
-function openMarket() {
-  alert('Market yakında açılacak! Şimdilik boş.');
-}
-
-function goToLobby() {
-  location.reload();
-}
-
-// ========== GAME PHASES ==========
-function startGame() {
-  document.getElementById('lobby').style.display = 'none';
-  playSound('lobises2', true);
-  // Intro: Nabel konuşmaları
-  gamePhase = 'intro';
-  introStep = 0;
-  runIntro();
-}
-
-function runIntro() {
-  const steps = [
-    { img: 'nabel', text: 'Hey Halil merhaba!', dur: 3000 },
-    { img: 'nabel', text: 'Bugün senin doğum günün!', dur: 3000 },
-    { img: 'nabel', text: 'Ama... Bir kaç değişiklik var.', dur: 3000 },
-    { img: 'nabel', text: 'Amacın bu bozukluğu yok etmek.', dur: 3500 },
-  ];
-  function nextStep(i) {
-    if(i >= steps.length) {
-      hideDialogue();
-      nabelExitsAndFriend3Enters();
-      return;
-    }
-    showDialogue(steps[i].img, steps[i].text, steps[i].dur, () => nextStep(i+1));
-  }
-  nextStep(0);
-}
-
-function nabelExitsAndFriend3Enters() {
-  // Nabel uzaklaşıyor (simüle)
-  gamePhase = 'nabelExit';
-  let nabelX = canvas.width * 0.5;
-  let going = true;
-  const exitAnim = setInterval(() => {
-    nabelX += canvas.width * 0.01;
-    if(nabelX > canvas.width + 100) {
-      clearInterval(exitAnim);
-      // Friend3 dönerek geliyor
-      friend3Entering = true;
-      friend3X = -canvas.width * 0.1;
-      friend3Timer = 0;
-      playSound('lobises2', false);
-      friend3EnterAnim();
-    }
-    // draw nabel moving (handled in render loop with nabelExitX)
-  }, 16);
-  window._nabelExitX = canvas.width * 0.5;
-  window._nabelExitAnim = setInterval(() => {
-    window._nabelExitX += canvas.width * 0.012;
-  }, 16);
-}
-
-let friend3EnterDone = false;
-function friend3EnterAnim() {
-  friend3X = -150;
-  friend3EnterDone = false;
-  const anim = setInterval(() => {
-    friend3X += canvas.width * 0.008;
-    if(friend3X >= canvas.width * 0.4) {
-      clearInterval(anim);
-      friend3EnterDone = true;
-      // friend3 durdu, 2sn bekle, loading
-      setTimeout(() => {
-        friend3Entering = false;
-        showLoading(() => {
-          startGameplay();
-        });
-      }, 1500);
-    }
-  }, 16);
-}
-
-function startGameplay() {
-  gamePhase = 'wave1';
-  gameStarted = true;
-  maxHp = 50; hp = 50;
-  currentWeapon = 'none';
-  player = createPlayer();
-  document.getElementById('hud').style.display = 'flex';
-  document.getElementById('mobileControls').style.display = 'flex';
-  updateHud();
-  updateWeaponIcon();
-  playSound('muzik1', true);
-  // Wave 1: 1 zombi, testere al
-  wave1();
-}
-
-function wave1() {
-  gamePhase = 'wave1';
-  // Canvas click ile testere alınıyor (already handled in click)
-  // Spawn first zombie
-  setTimeout(() => {
-    spawnZombie(canvas.width * 0.85);
-  }, 1000);
-}
-
-function afterWave1() {
-  // Nabel gökyüzünden geçer
-  gamePhase = 'nabelPass';
-  nabelPassX = -200;
-  nabelPassY = canvas.height * 0.15;
-  nabelPassDone = false;
-  setTimeout(() => {
-    wave2();
-  }, 3000);
-}
-
-let nabelPassY = 0;
-function wave2() {
-  // 10 zombi + silah al
-  gamePhase = 'wave2';
-  currentWeapon = 'silah';
-  updateWeaponIcon();
-  showDialogue(null, '🔫 Silah elde edildi!', 1500, null);
-  playSound('savasmuzigi', true);
-  for(let i=0; i<10; i++) {
-    setTimeout(() => spawnZombie(canvas.width * (0.7 + Math.random()*0.3)), i*500);
   }
 }
-
-function afterWave2() {
-  gamePhase = 'kafkaousFight';
-  playSound('ozelcagri', true);
-  showDialogue('kafkaous', 'Ben final boslarındanım. Beni yendikten sonra sadece birisi kalıcak hıhıhı!', 4000, () => {
-    kafkaousHp = 100;
-    enemies = [];
-    spawnKafkaous(canvas.width * 0.75);
-    maxHp = 60; hp = 60; updateHud();
-  });
-}
-
-function afterKafkaous() {
-  // Okarun gelir
-  gamePhase = 'okarunScene';
-  enemies = [];
-  playSound('lobises2');
-  showDialogue('okarun', 'Biraz uyu...sakm... ı?', 2500, () => {
-    // Okarun bizi uyutup 10 can alır
-    hp -= 10;
-    if(hp < 1) hp = 1;
-    maxHp = hp;
-    updateHud();
-    // Nabel o 10 canı alır
-    showDialogue('nabel', 'O 10 canı ben aldım... Hıhı. Nabel aslında düşman!', 3000, () => {
-      showDialogue('nabel', 'Nasıl oldunuz? Ben aslında hep düşmanınızdım!', 3000, () => {
-        startFinalWave();
-      });
-    });
-  });
-}
-
-function startFinalWave() {
-  gamePhase = 'finalWave';
-  finalWaveActive = true;
-  maxHp = 120; hp = 120; updateHud();
-  phoneAvailable = true;
-  document.getElementById('phoneBtn').style.display = 'flex';
-  playSound('nabelvs', true);
-  enemies = [];
-  // 5 zombi
-  for(let i=0;i<5;i++) setTimeout(()=>spawnZombie(canvas.width*(0.6+Math.random()*0.35)), i*400);
-  // 1 kafkaous
-  setTimeout(()=>{ kafkaousHp=100; spawnKafkaous(canvas.width*0.8); }, 2500);
-  // 1 friend3
-  setTimeout(()=>spawnFriend3(canvas.width*0.9), 4000);
-  // okarun
-  setTimeout(()=>{
-    enemies.push({
-      type:'okarun', img:'okarun', hp:350, maxHp:350, alive:true,
-      x:canvas.width*0.6, y:groundY,
-      w:canvas.width*0.09, h:canvas.height*0.22,
-      speed:canvas.width*0.0015, attackCooldown:0, deathTimer:0,
-      phoneCooldown:0
-    });
-  }, 5000);
-  // Nabel klonlar
-  nabelFinalActive = true;
-  nabelFinalHp = 20;
-  nabelFinalClones = [];
-  for(let i=0;i<3;i++) {
-    nabelFinalClones.push({
-      x: canvas.width*(0.5+i*0.15), y: groundY,
-      w: canvas.width*0.06, h: canvas.height*0.12,
-      hp: 10, maxHp:10, alive:true, cloneTimer:120
-    });
-  }
-}
-
-function checkFinalWaveOver() {
-  const allDead = enemies.every(e=>!e.alive);
-  const nabelsAlive = nabelFinalClones.filter(n=>n.alive).length;
-  if(allDead && nabelsAlive === 0 && nabelFinalActive) {
-    nabelFinalBoss();
-  }
-}
-
-function nabelFinalBoss() {
-  nabelFinalActive = false;
-  gamePhase = 'nabelFinal';
-  playSound('nabelvs', true);
-  nabelFinalHp = 20;
-  nabelFinalClones = [{
-    x: canvas.width*0.5, y:groundY,
-    w:canvas.width*0.08, h:canvas.height*0.14,
-    hp:20, maxHp:20, alive:true, cloneTimer:200,
-    isMain:true, phoneCooldown:0
-  }];
-  showDialogue('nabel','Sadece ben kaldım... ama bu bitmedi!',2500,null);
-}
-
-function checkNabelFinalDead() {
-  if(nabelFinalClones.every(n=>!n.alive)) {
-    gameOver(true);
-  }
-}
-
-function gameOver(win) {
-  stopAllSounds();
-  if(win) {
-    document.getElementById('endScreen').style.display = 'flex';
-  } else {
-    document.getElementById('endScreen').style.display = 'flex';
-    document.getElementById('endScreen').querySelector('h1').textContent = '💀 ÖLDÜN 💀';
-    document.getElementById('endScreen').querySelector('p').textContent = 'Haliltale bitti...\nTekrar denemek ister misin?';
-  }
-}
-
-// ========== MAIN GAME LOOP ==========
-let lastTime = 0;
-function loop(ts) {
-  const dt = Math.min((ts - lastTime) / 16.67, 3);
-  lastTime = ts;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBackground();
-
-  if(gameStarted && player) {
-    updatePlayer(dt);
-    updateEnemies(dt);
-    updateBullets(dt);
-    updateParticles(dt);
-    drawBullets();
-    drawParticles();
-    drawEnemies();
-    drawPlayer();
-    // Nabel pass animation
-    if(gamePhase === 'nabelPass') {
-      nabelPassX += canvas.width * 0.008 * dt;
-      ctx.drawImage(IMGS.nabel, nabelPassX, nabelPassY, canvas.width*0.08, canvas.height*0.15);
-    }
-    // Nabel final clones
-    if((nabelFinalActive || gamePhase==='nabelFinal') && nabelFinalClones.length > 0) {
-      updateNabelFinal(dt);
-      drawNabelFinal();
-    }
-    checkWaveProgress();
-  }
-
-  // Nabel exit
-  if(window._nabelExitX && gamePhase==='nabelExit') {
-    ctx.drawImage(IMGS.nabel, window._nabelExitX, canvas.height*0.35, canvas.width*0.08, canvas.height*0.15);
-  }
-  // Friend3 entering
-  if(friend3Entering) {
-    // Rotating entrance
-    ctx.save();
-    ctx.translate(friend3X + canvas.width*0.04, canvas.height*0.45);
-    friend3Timer += 0.08 * dt;
-    ctx.rotate(friend3Timer);
-    ctx.drawImage(IMGS.friend3, -canvas.width*0.04, -canvas.height*0.08, canvas.width*0.08, canvas.height*0.16);
-    ctx.restore();
-  }
-
-  requestAnimationFrame(loop);
-}
-
-function drawBackground() {
-  // Simple gradient bg
-  const grad = ctx.createLinearGradient(0,0,0,canvas.height);
-  grad.addColorStop(0, '#0a0a1a');
-  grad.addColorStop(1, '#1a0a0a');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  // Ground
-  ctx.fillStyle = '#2a1a0a';
-  ctx.fillRect(0, groundY + canvas.height*0.14, canvas.width, canvas.height);
-  // Ground line
-  ctx.strokeStyle = '#5a3a1a';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(0, groundY + canvas.height*0.14);
-  ctx.lineTo(canvas.width, groundY + canvas.height*0.14);
-  ctx.stroke();
-}
-
-function updatePlayer(dt) {
-  if(!player) return;
-  const speed = canvas.width * 0.006;
-  const gnd = groundY;
-
-  if((keys['ArrowLeft'] || keys['a'] || keys['A'])) { player.x -= speed*dt; player.facing = -1; }
-  if((keys['ArrowRight'] || keys['d'] || keys['D'])) { player.x += speed*dt; player.facing = 1; }
-  if((keys['ArrowUp'] || keys['w'] || keys['W']) && player.onGround) doJump();
-
-  player.vy += 0.9 * dt;
-  player.y += player.vy * dt;
-
-  if(player.y >= gnd) {
-    player.y = gnd;
-    player.vy = 0;
-    player.onGround = true;
-    isJumping = false;
-  }
-  player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
-  if(player.attackCooldown > 0) player.attackCooldown -= dt;
-  if(player.invincible > 0) player.invincible -= dt;
-
-  // Weapon pickup on canvas click (first click)
-  // Handled in click event
-}
-
-function drawPlayer() {
-  if(!player) return;
+function drawPlayer(){
+  if(!player)return;
   ctx.save();
-  if(player.facing === -1) {
-    ctx.scale(-1,1);
-    ctx.drawImage(IMGS.player, -player.x - player.w, player.y, player.w, player.h);
-  } else {
-    ctx.drawImage(IMGS.player, player.x, player.y, player.w, player.h);
+  if(player.invCD>0&&Math.floor(player.invCD/4)%2===0)ctx.globalAlpha=.35;
+  if(player.facing===-1){
+    ctx.translate(player.x+player.w,0);ctx.scale(-1,1);
+    ctx.drawImage(IMGS.player,0,player.y,player.w,player.h);
+  }else{
+    ctx.drawImage(IMGS.player,player.x,player.y,player.w,player.h);
   }
   ctx.restore();
-  // Draw weapon
-  if(currentWeapon === 'testere') {
-    ctx.drawImage(IMGS.testere, player.x + player.w*(player.facing>0?0.7:-0.3), player.y+player.h*0.3, player.w*0.7, player.w*0.7);
-  } else if(currentWeapon === 'silah') {
-    ctx.drawImage(IMGS.silah, player.x + player.w*(player.facing>0?0.8:-0.4), player.y+player.h*0.35, player.w*0.8, player.w*0.4);
+  if(weapon==='testere'){
+    const wx=player.facing>0?player.x+player.w*.6:player.x-player.w*.32;
+    ctx.drawImage(IMGS.testere,wx,player.y+player.h*.3,player.w*.65,player.w*.65);
+  }else if(weapon==='silah'){
+    const wx=player.facing>0?player.x+player.w*.72:player.x-player.w*.42;
+    ctx.drawImage(IMGS.silah,wx,player.y+player.h*.38,player.w*.78,player.w*.38);
   }
 }
 
-function updateEnemies(dt) {
-  const px = player.x + player.w/2;
-  const py = player.y + player.h/2;
-  for(const e of enemies) {
-    if(!e.alive) {
-      if(e.deathTimer > 0) e.deathTimer -= dt;
-      continue;
+// ============================
+// APPLES
+// ============================
+function spawnApple(){
+  apples.push({x:canvas.width*(.12+Math.random()*.76),y:groundY+10,bob:Math.random()*Math.PI*2});
+}
+function drawApples(t){
+  for(const a of apples){
+    const b=Math.sin(t*.003+a.bob)*6;
+    ctx.save();ctx.translate(a.x,a.y+b);
+    // body
+    ctx.fillStyle='#dd1111';
+    ctx.beginPath();ctx.arc(0,-18,13,0,Math.PI*2);ctx.fill();
+    // shine
+    ctx.fillStyle='rgba(255,255,255,.22)';
+    ctx.beginPath();ctx.arc(-4,-22,5,0,Math.PI*2);ctx.fill();
+    // stem
+    ctx.strokeStyle='#552200';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(0,-31);ctx.lineTo(0,-38);ctx.stroke();
+    // leaf
+    ctx.fillStyle='#22bb22';
+    ctx.beginPath();ctx.ellipse(5,-37,7,4,Math.PI*.35,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+}
+function showAppleHint(){
+  const el=document.getElementById('appleHint');
+  el.style.display='block';clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none',1300);
+}
+
+// ============================
+// ENEMIES
+// ============================
+function mkZombie(x){
+  return{type:'zombi',img:'zombi',hp:30,maxHp:30,alive:true,deathT:0,
+    x:x??canvas.width*.85,y:groundY,w:canvas.width*.07,h:canvas.height*.16,spd:canvas.width*.0025,atkCD:0};
+}
+function mkKafkaous(x){
+  return{type:'kafkaous',img:'kafkaous',hp:100,maxHp:100,alive:true,deathT:0,
+    x:x??canvas.width*.75,y:groundY,w:canvas.width*.09,h:canvas.height*.22,spd:canvas.width*.0018,
+    atkCD:0,teleT:210,cloneT:380,shootT:90,sawT:140};
+}
+function mkFriend3(x){
+  return{type:'friend3',img:'friend3',hp:999,maxHp:999,alive:true,deathT:0,
+    x:x??canvas.width*.88,y:groundY,w:canvas.width*.07,h:canvas.height*.15,spd:canvas.width*.002,
+    atkCD:0,stole:false};
+}
+function mkOkarun(x){
+  return{type:'okarun',img:'okarun',hp:350,maxHp:350,alive:true,deathT:0,
+    x:x??canvas.width*.65,y:groundY,w:canvas.width*.085,h:canvas.height*.21,spd:canvas.width*.0015,
+    atkCD:0,phoneT:260};
+}
+function killEnemy(e){
+  e.alive=false;e.deathT=50;
+  burst(e.x+e.w/2,e.y+e.h/2,'#ff6600');
+  if(Math.random()<.4)spawnApple();
+}
+function updateEnemies(dt){
+  if(!player)return;
+  const px=player.x+player.w/2,py=player.y+player.h/2;
+  for(const e of enemies){
+    if(!e.alive){if(e.deathT>0)e.deathT-=dt;continue;}
+    const ex=e.x+e.w/2,dir=px<ex?-1:1;
+    e.x+=dir*e.spd*dt; e.atkCD-=dt;
+
+    if(e.type==='zombi'){
+      if(Math.abs(ex-px)<e.w*.9&&e.atkCD<=0){e.atkCD=90;takeDmg(5);}
     }
-    // Move toward player
-    const ex = e.x + e.w/2;
-    const dir = px < ex ? -1 : 1;
-    e.x += dir * e.speed * dt;
-
-    if(e.type === 'kafkaous') updateKafkaous(e, dt, px, py);
-    if(e.type === 'friend3') updateFriend3(e, dt, px, py);
-    if(e.type === 'okarun') updateOkarun(e, dt, px, py);
-
-    // Basic melee attack
-    if(e.type === 'zombi' || e.type === 'friend3') {
-      e.attackCooldown -= dt;
-      if(Math.abs(ex - px) < e.w*0.9 && e.attackCooldown <= 0) {
-        e.attackCooldown = 90;
-        takeDamage(e.type === 'friend3' ? 15 : 5);
-        if(e.type === 'friend3' && !e.stealDone) {
-          // Steal testere + headcut
-          e.stealDone = true;
-          currentWeapon = 'none';
-          updateWeaponIcon();
-          showDialogue('friend3','Testereni çaldım! Kafa kesme zamanı!',2000,null);
-        }
+    if(e.type==='friend3'){
+      if(Math.abs(ex-px)<e.w*.9&&e.atkCD<=0){
+        e.atkCD=100;takeDmg(15);
+        if(!e.stole){e.stole=true;weapon='none';updateWeapon();
+          showDialogue(null,'Nabel_friend3 testereni çaldı ve kafanı kesti! -15 CAN',2200);}
       }
     }
-  }
-  // Remove fully dead
-  // Keep for death animation
-}
-
-function updateKafkaous(e, dt, px, py) {
-  e.attackCooldown -= dt;
-  e.cloneTimer -= dt;
-  e.teleportTimer -= dt;
-  e.shootTimer -= dt;
-  e.sawTimer -= dt;
-  const ex = e.x + e.w/2;
-  // Melee
-  if(Math.abs(ex-px)<e.w && e.attackCooldown<=0) {
-    e.attackCooldown = 60;
-    takeDamage(20);
-  }
-  // Shoot
-  if(e.shootTimer<=0) {
-    e.shootTimer = 120;
-    bullets.push({x:ex, y:e.y+e.h*0.4, vx:(px-ex)/Math.abs(px-ex)*canvas.width*0.008, vy:0, dmg:5, fromPlayer:false});
-  }
-  // Saw
-  if(e.sawTimer<=0) {
-    e.sawTimer = 150;
-    bullets.push({x:ex, y:e.y+e.h*0.5, vx:(px-ex)/Math.abs(px-ex)*canvas.width*0.006, vy:0, dmg:10, fromPlayer:false, isSaw:true});
-  }
-  // Teleport
-  if(e.teleportTimer<=0) {
-    e.teleportTimer = 180;
-    e.x = Math.random() > 0.5 ? canvas.width*0.15 : canvas.width*0.7;
-  }
-  // Clone
-  if(e.cloneTimer<=0 && kafkaousClones.filter(c=>c.alive).length < 2) {
-    e.cloneTimer = 300;
-    const clone = spawnKafkaous(e.x + (Math.random()-0.5)*canvas.width*0.2);
-    // mark as clone - handled differently; just spawn
+    if(e.type==='kafkaous'){
+      e.teleT-=dt;e.cloneT-=dt;e.shootT-=dt;e.sawT-=dt;
+      if(Math.abs(ex-px)<e.w*.8&&e.atkCD<=0){e.atkCD=55;takeDmg(20);}
+      if(e.shootT<=0){e.shootT=85+Math.random()*40;
+        bullets.push({x:ex,y:e.y+e.h*.4,vx:(px>ex?1:-1)*canvas.width*.009,vy:0,dmg:5,own:false});}
+      if(e.sawT<=0){e.sawT=135+Math.random()*50;
+        bullets.push({x:ex,y:e.y+e.h*.5,vx:(px>ex?1:-1)*canvas.width*.006,vy:0,dmg:10,own:false,saw:true});}
+      if(e.teleT<=0){e.teleT=155+Math.random()*80;
+        e.x=Math.random()>.5?canvas.width*.1:canvas.width*.7;burst(e.x+e.w/2,e.y+e.h/2,'#aa00ff');}
+      if(e.cloneT<=0&&enemies.filter(x=>x.type==='kafkaous'&&x.alive).length<3){
+        e.cloneT=420;const cl=mkKafkaous(e.x+canvas.width*(Math.random()>.5?.22:-.22));
+        cl.hp=35;cl.maxHp=35;enemies.push(cl);}
+    }
+    if(e.type==='okarun'){
+      e.phoneT-=dt;
+      if(Math.abs(ex-px)<e.w*.8&&e.atkCD<=0){e.atkCD=70;takeDmg(8);}
+      if(phoneAvailable&&e.phoneT<=0){e.phoneT=210+Math.random()*60;
+        showDialogue(null,'📱 Okarun telefonu kafana fırlattı! -5 CAN',1500);takeDmg(5);}
+    }
   }
 }
-
-function updateFriend3(e, dt, px, py) {
-  // Already handled above
-}
-
-function updateOkarun(e, dt, px, py) {
-  e.attackCooldown -= dt;
-  e.phoneCooldown -= dt;
-  const ex = e.x + e.w/2;
-  if(Math.abs(ex-px)<e.w && e.attackCooldown<=0) {
-    e.attackCooldown = 70;
-    takeDamage(8);
-  }
-  // Throw phone
-  if(phoneAvailable && e.phoneCooldown<=0) {
-    e.phoneCooldown = 200;
-    showDialogue('okarun','📱 Kafana fırlattım!',1200,null);
-    takeDamage(5);
-  }
-}
-
-function drawEnemies() {
-  for(const e of enemies) {
-    if(!e.alive && e.deathTimer<=0) continue;
+function drawEnemies(){
+  for(const e of enemies){
+    if(!e.alive&&e.deathT<=0)continue;
     ctx.save();
-    if(!e.alive) ctx.globalAlpha = e.deathTimer/60;
-    ctx.drawImage(IMGS[e.img], e.x, e.y, e.w, e.h);
-    // HP bar
-    if(e.alive) {
-      const bw = e.w;
-      const bh = 6;
-      ctx.fillStyle = '#333';
-      ctx.fillRect(e.x, e.y-12, bw, bh);
-      ctx.fillStyle = '#ff2222';
-      ctx.fillRect(e.x, e.y-12, bw*(e.hp/e.maxHp), bh);
+    if(!e.alive)ctx.globalAlpha=Math.max(0,e.deathT/50);
+    ctx.drawImage(IMGS[e.img],e.x,e.y,e.w,e.h);
+    if(e.alive){
+      ctx.fillStyle='#222';ctx.fillRect(e.x,e.y-10,e.w,6);
+      ctx.fillStyle='#ff2200';ctx.fillRect(e.x,e.y-10,e.w*(e.hp/e.maxHp),6);
     }
     ctx.restore();
   }
 }
 
-function updateBullets(dt) {
-  for(let i=bullets.length-1;i>=0;i--) {
-    const b = bullets[i];
-    b.x += b.vx*dt;
-    b.y += b.vy*dt;
-    if(b.x<0||b.x>canvas.width||b.y<0||b.y>canvas.height) { bullets.splice(i,1); continue; }
-    if(b.fromPlayer) {
-      // hit enemies
-      for(const e of enemies) {
-        if(!e.alive) continue;
-        if(b.x>e.x && b.x<e.x+e.w && b.y>e.y && b.y<e.y+e.h) {
-          e.hp -= b.dmg;
-          spawnParticle(b.x, b.y, '#ff8800');
-          if(e.hp<=0) { e.alive=false; e.deathTimer=60; }
-          bullets.splice(i,1); break;
+// ============================
+// BULLETS
+// ============================
+function updateBullets(dt){
+  const p=player;
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i];
+    b.x+=b.vx*dt;b.y+=b.vy*dt;
+    if(b.x<-60||b.x>canvas.width+60||b.y<-60||b.y>canvas.height+60){bullets.splice(i,1);continue;}
+    if(b.own){
+      let hit=false;
+      for(const e of enemies){
+        if(!e.alive)continue;
+        if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){
+          e.hp-=b.dmg;burst(b.x,b.y,'#ff8800');
+          if(e.hp<=0)killEnemy(e);
+          bullets.splice(i,1);hit=true;break;
         }
       }
-      // hit nabel clones
-      if(i < bullets.length) {
-        for(const n of nabelFinalClones) {
-          if(!n.alive) continue;
-          if(b.x>n.x && b.x<n.x+n.w && b.y>n.y && b.y<n.y+n.h) {
-            n.hp -= b.dmg;
-            spawnParticle(b.x,b.y,'#00ccff');
-            if(n.hp<=0) n.alive=false;
-            bullets.splice(i,1); break;
+      if(!hit&&i<bullets.length){
+        for(const n of nfClones){
+          if(!n.alive)continue;
+          if(b.x>n.x&&b.x<n.x+n.w&&b.y>n.y&&b.y<n.y+n.h){
+            n.hp-=b.dmg;burst(b.x,b.y,'#00ccff');
+            if(n.hp<=0){n.alive=false;onNabelCloneDie();}
+            bullets.splice(i,1);break;
           }
         }
       }
-    } else {
-      // hit player
-      if(player && player.invincible<=0 && b.x>player.x && b.x<player.x+player.w && b.y>player.y && b.y<player.y+player.h) {
-        takeDamage(b.dmg);
-        spawnParticle(b.x,b.y,'#ff0000');
-        player.invincible = 30;
-        bullets.splice(i,1);
+    }else{
+      if(p&&p.invCD<=0&&b.x>p.x&&b.x<p.x+p.w&&b.y>p.y&&b.y<p.y+p.h){
+        takeDmg(b.dmg);p.invCD=38;bullets.splice(i,1);
       }
     }
   }
 }
+function drawBullets(){
+  for(const b of bullets){
+    if(b.saw){ctx.drawImage(IMGS.testere,b.x-14,b.y-14,28,28);continue;}
+    ctx.fillStyle=b.own?'#ffee00':'#ff4400';
+    ctx.beginPath();ctx.arc(b.x,b.y,6,0,Math.PI*2);ctx.fill();
+  }
+}
 
-function drawBullets() {
-  for(const b of bullets) {
-    ctx.save();
-    if(b.isSaw) {
-      ctx.drawImage(IMGS.testere, b.x-12, b.y-12, 24, 24);
-    } else {
-      ctx.fillStyle = b.fromPlayer ? '#ffff00' : '#ff4400';
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, 6, 0, Math.PI*2);
-      ctx.fill();
+// ============================
+// PARTICLES
+// ============================
+function burst(x,y,col){for(let i=0;i<8;i++)parts.push({x,y,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6,life:28,col});}
+function updateParts(dt){for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;if(p.life<=0)parts.splice(i,1);}}
+function drawParts(){for(const p of parts){ctx.save();ctx.globalAlpha=Math.max(0,p.life/28);ctx.fillStyle=p.col;ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill();ctx.restore();}}
+
+// ============================
+// DAMAGE
+// ============================
+function takeDmg(amount){
+  if(!player||player.invCD>20)return;
+  hp=Math.max(0,hp-amount);player.invCD=42;updateHUD();
+  const f=document.getElementById('dmgFlash');f.style.display='block';
+  clearTimeout(f._t);f._t=setTimeout(()=>f.style.display='none',160);
+  if(hp<=0)endGame(false);
+}
+
+// ============================
+// HUD
+// ============================
+function updateHUD(){
+  document.getElementById('hpNum').textContent=Math.ceil(hp);
+  const pct=Math.max(0,hp/maxHp*100);
+  const f=document.getElementById('hpFill');
+  f.style.width=pct+'%';
+  f.style.background=pct>50?'#22cc44':pct>25?'#ffcc00':'#ff2222';
+}
+function updateWeapon(){
+  const lb={none:'Silah: Yok',testere:'🪚 Testere',silah:'🔫 Tabanca'};
+  document.getElementById('weaponIcon').textContent=lb[weapon]||'';
+}
+function showHUD(){
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('mobileControls').style.display='flex';
+}
+
+// ============================
+// DIALOGUE
+// ============================
+function showDialogue(imgKey,text,dur,cb){
+  const box=document.getElementById('dialogue');
+  const img=document.getElementById('dialogueImg');
+  const txt=document.getElementById('dialogueText');
+  box.style.display='block';dialogueActive=true;
+  img.style.display=imgKey?'block':'none';
+  if(imgKey)img.src=IMG_SRC[imgKey]||'';
+  txt.textContent=text;
+  clearTimeout(box._t);
+  box._t=setTimeout(()=>{box.style.display='none';dialogueActive=false;if(cb)cb();},dur||2500);
+}
+function hideDialogue(){document.getElementById('dialogue').style.display='none';dialogueActive=false;}
+function dlgChain(steps,finalCb){
+  let i=0;
+  function next(){if(i>=steps.length){if(finalCb)finalCb();return;}const s=steps[i++];showDialogue(s.img,s.text,s.dur||3000,next);}
+  next();
+}
+
+// ============================
+// LOADING SCREEN
+// ============================
+function showLoading(cb){
+  const ls=document.getElementById('loadingScreen');ls.style.display='flex';
+  const fill=document.getElementById('loadingFill');let p=0;
+  const iv=setInterval(()=>{p+=2;fill.style.width=p+'%';if(p>=100){clearInterval(iv);setTimeout(()=>{ls.style.display='none';cb();},400);}},40);
+}
+
+// ============================
+// PHONE
+// ============================
+function openPhone(){
+  if(!phoneAvailable)return;
+  document.getElementById('phoneUI').style.display='block';playSFX('telefonses');
+}
+function phoneApp(name){alert('📱 '+name+' açıldı!');}
+
+// ============================
+// NABEL FINAL CLONES
+// ============================
+function mkNabelClone(x,isMain){
+  return{x:x??canvas.width*.5,y:groundY,w:canvas.width*.065,h:canvas.height*.13,
+         hp:isMain?20:10,maxHp:isMain?20:10,alive:true,isMain:!!isMain,
+         cloneT:270+Math.random()*80,atkCD:0,phoneT:isMain?280:9999};
+}
+function startNabelFinal(){
+  nfPhase=true;phase='nabelFinal';
+  stopBGM();playBGM('nabelvs');
+  nfClones=[mkNabelClone(canvas.width*.35,false),mkNabelClone(canvas.width*.55,false),mkNabelClone(canvas.width*.72,false)];
+  showDialogue('nabel','Sadece ben kaldım! Ama bu bitmedi!',2500);
+}
+function updateNabelFinals(dt){
+  if(!player)return;
+  const px=player.x+player.w/2;
+  const alive=nfClones.filter(n=>n.alive);
+  for(const n of nfClones){
+    if(!n.alive)continue;
+    const dir=px<n.x+n.w/2?-1:1;
+    n.x+=dir*canvas.width*.003*dt;
+    n.cloneT-=dt;n.phoneT-=dt;n.atkCD-=dt;
+    // Contact dmg
+    if(player.invCD<=0&&Math.abs(n.x+n.w/2-px)<n.w&&Math.abs(n.y+n.h/2-(player.y+player.h*.5))<n.h*.75){
+      takeDmg(3);player.invCD=45;
     }
+    // Phone throw (final 1 clone only)
+    if(alive.length<=1&&n.phoneT<=0&&phoneAvailable){
+      n.phoneT=230;showDialogue('nabel','📱 Telefonu fırlattım!',1200);takeDmg(5);
+    }
+    // Cloning
+    if(n.cloneT<=0&&alive.length<6){
+      n.cloneT=300+Math.random()*100;
+      nfClones.push(mkNabelClone(n.x+canvas.width*(Math.random()>.5?.2:-.2),false));
+    }
+  }
+  // When 3 alive → shrink to 1 main with 20 hp
+  if(alive.length<=3&&alive.length>1&&phase==='nabelFinal'){
+    // Let player kill naturally — this triggers in onNabelCloneDie
+  }
+}
+function drawNabelFinals(){
+  for(const n of nfClones){
+    if(!n.alive)continue;
+    ctx.drawImage(IMGS.nabel,n.x,n.y,n.w,n.h);
+    ctx.fillStyle='#222';ctx.fillRect(n.x,n.y-10,n.w,5);
+    ctx.fillStyle='#00ccff';ctx.fillRect(n.x,n.y-10,n.w*(n.hp/n.maxHp),5);
+  }
+}
+function onNabelCloneDie(){
+  const alive=nfClones.filter(n=>n.alive);
+  if(alive.length===0){endGame(true);return;}
+  // At 3 remaining: consolidate to 1 main
+  if(alive.length<=3&&!alive.some(n=>n.isMain)){
+    for(let i=1;i<alive.length;i++)alive[i].alive=false;
+    alive[0].isMain=true;alive[0].hp=20;alive[0].maxHp=20;alive[0].phoneT=300;
+  }
+}
+
+// ============================
+// WAVE CHECKS
+// ============================
+function checkWaves(){
+  const alive=enemies.filter(e=>e.alive);
+  if(phase==='wave1'&&!w1done&&enemies.length>0&&alive.length===0){w1done=true;afterWave1();}
+  if(phase==='wave2'&&!w2done&&enemies.length>0&&alive.length===0){w2done=true;afterWave2();}
+  if(phase==='kafkaousFight'&&!kdone&&enemies.length>0&&alive.length===0){kdone=true;afterKafkaous();}
+  if(phase==='finalWave'&&!finalAllDead){
+    const nfAlive=nfClones.filter(n=>n.alive).length;
+    if(alive.length===0&&nfAlive===0){finalAllDead=true;startNabelFinal();}
+  }
+}
+
+// ============================
+// WAVE SEQUENCE
+// ============================
+function afterWave1(){
+  // Nabel gökyüzünden süzülür
+  nabelPassX=-canvas.width*.08;nabelPassOn=true;
+  setTimeout(()=>{nabelPassOn=false;wave2();},3200);
+}
+function wave2(){
+  phase='wave2';enemies=[];
+  weapon='silah';updateWeapon();
+  showDialogue(null,'🔫 Silah elde edildi! 10 zombi geliyor!',2000);
+  stopBGM();playBGM('savasmuzigi');
+  for(let i=0;i<10;i++)setTimeout(()=>enemies.push(mkZombie(canvas.width*(.65+Math.random()*.32))),i*440);
+  spawnApple();
+}
+function afterWave2(){
+  phase='kafkaousFight';enemies=[];
+  stopBGM();playBGM('ozelcagri');
+  showDialogue('kafkaous','Ben final boslarındanım. Beni yendikten sonra sadece birisi kalıcak hıhıhı!',4200,()=>{
+    maxHp=60;hp=60;updateHUD();
+    enemies.push(mkKafkaous(canvas.width*.75));
+    spawnApple();
+  });
+}
+function afterKafkaous(){
+  phase='okarunScene';enemies=[];
+  stopBGM();playSFX('lobises2');
+  showDialogue('okarun','Biraz uyusak mı? 😴',2500,()=>{
+    takeDmg(10);
+    setTimeout(()=>{
+      showDialogue('nabel','O 10 canı ben aldım! Ben aslında hep düşmanınızdım!',3500,()=>startFinalWave());
+    },400);
+  });
+}
+function startFinalWave(){
+  phase='finalWave';enemies=[];
+  maxHp=120;hp=120;updateHUD();
+  phoneAvailable=true;
+  stopBGM();playBGM('nabelvs');
+  // 5 zombi
+  for(let i=0;i<5;i++)setTimeout(()=>enemies.push(mkZombie(canvas.width*(.58+Math.random()*.36))),i*340);
+  // 1 kafkaous
+  setTimeout(()=>{const k=mkKafkaous(canvas.width*.8);enemies.push(k);},2100);
+  // 1 friend3
+  setTimeout(()=>enemies.push(mkFriend3(canvas.width*.88)),3400);
+  // okarun
+  setTimeout(()=>enemies.push(mkOkarun(canvas.width*.65)),4600);
+  // Nabel klonlar başta da saldırır
+  nfClones=[mkNabelClone(canvas.width*.35,false),mkNabelClone(canvas.width*.6,false),mkNabelClone(canvas.width*.78,false)];
+  nfPhase=true;
+  spawnApple();spawnApple();
+}
+
+// ============================
+// INTRO
+// ============================
+function startIntro(){
+  document.getElementById('lobby').style.display='none';
+  phase='intro';playBGM('lobises2');
+  dlgChain([
+    {img:'nabel',text:'Hey Halil merhaba!',dur:3000},
+    {img:'nabel',text:'Bugün senin doğum günün!',dur:3000},
+    {img:'nabel',text:'Ama... Bir kaç değişiklik var.',dur:3000},
+    {img:'nabel',text:'Amacın bu bozukluğu yok etmek.',dur:3500},
+  ],()=>{
+    hideDialogue();
+    // Nabel çıkıyor
+    nabelExitX=canvas.width*.45;nabelExitOn=true;
+    const iv=setInterval(()=>nabelExitX+=canvas.width*.013,16);
+    setTimeout(()=>{
+      clearInterval(iv);nabelExitOn=false;
+      // Friend3 dönerek giriyor
+      f3X=-canvas.width*.12;f3Angle=0;f3On=true;
+      playBGM('lobises2');
+      const iv2=setInterval(()=>{f3X+=canvas.width*.009;f3Angle+=0.1;
+        if(f3X>=canvas.width*.38){clearInterval(iv2);
+          setTimeout(()=>{f3On=false;showLoading(beginGameplay);},1400);}
+      },16);
+    },1900);
+  });
+}
+
+function beginGameplay(){
+  phase='wave1';
+  player=mkPlayer();
+  maxHp=50;hp=50;weapon='none';
+  enemies=[];bullets=[];parts=[];apples=[];
+  w1done=false;w2done=false;kdone=false;finalAllDead=false;
+  nfPhase=false;nfClones=[];
+  updateHUD();updateWeapon();showHUD();
+  stopBGM();playBGM('muzik1');
+  setTimeout(()=>enemies.push(mkZombie(canvas.width*.85)),1200);
+  spawnApple();
+  // Periyodik elma
+  if(appleInterval)clearInterval(appleInterval);
+  appleInterval=setInterval(()=>{if(player&&phase!=='lobby'&&phase!=='intro')spawnApple();},20000);
+}
+
+// ============================
+// END
+// ============================
+function endGame(win){
+  stopBGM();if(appleInterval)clearInterval(appleInterval);
+  const scr=document.getElementById('endScreen');
+  if(win){
+    document.getElementById('endTitle').textContent='🎉 TEBRİKLER! 🎉';
+    document.getElementById('endText').innerHTML='Bu oyun bir özel deneydir!<br>Nifugames\'in diğer oyunları ile bağlantısı yoktur!<br>Teşekkürler.';
+  }else{
+    document.getElementById('endTitle').textContent='💀 ÖLDÜN 💀';
+    document.getElementById('endText').innerHTML='Haliltale bitti...<br>Tekrar dene!';
+  }
+  scr.style.display='flex';
+}
+
+// ============================
+// DRAW BG
+// ============================
+function drawBG(){
+  const g=ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,'#08080f');g.addColorStop(1,'#12060a');
+  ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#1a0c04';
+  ctx.fillRect(0,groundY+canvas.height*.15,canvas.width,canvas.height);
+  ctx.strokeStyle='#4a2a0a';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(0,groundY+canvas.height*.15);ctx.lineTo(canvas.width,groundY+canvas.height*.15);ctx.stroke();
+}
+
+// ============================
+// MAIN LOOP
+// ============================
+let lastT=0;
+function loop(ts){
+  const dt=Math.min((ts-lastT)/16.67,3);lastT=ts;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawBG();
+
+  // Intro anims
+  if(nabelExitOn)ctx.drawImage(IMGS.nabel,nabelExitX,canvas.height*.32,canvas.width*.08,canvas.height*.15);
+  if(f3On){
+    ctx.save();ctx.translate(f3X+canvas.width*.04,canvas.height*.42);ctx.rotate(f3Angle);
+    ctx.drawImage(IMGS.friend3,-canvas.width*.04,-canvas.height*.075,canvas.width*.08,canvas.height*.15);
     ctx.restore();
   }
-}
-
-function updateParticles(dt) {
-  for(let i=particles.length-1;i>=0;i--) {
-    const p = particles[i];
-    p.x += p.vx*dt; p.y += p.vy*dt;
-    p.life -= dt;
-    if(p.life<=0) particles.splice(i,1);
+  if(nabelPassOn){
+    nabelPassX+=canvas.width*.007*dt;
+    ctx.drawImage(IMGS.nabel,nabelPassX,canvas.height*.08,canvas.width*.08,canvas.height*.14);
   }
-}
 
-function drawParticles() {
-  for(const p of particles) {
-    ctx.save();
-    ctx.globalAlpha = p.life/30;
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
-    ctx.fill();
-    ctx.restore();
+  if(player){
+    updatePlayer(dt);
+    updateEnemies(dt);
+    if(nfPhase)updateNabelFinals(dt);
+    updateBullets(dt);
+    updateParts(dt);
+    drawApples(ts);
+    drawParts();
+    drawBullets();
+    drawEnemies();
+    if(nfPhase)drawNabelFinals();
+    drawPlayer();
+    checkWaves();
   }
-}
-
-function updateNabelFinal(dt) {
-  const px = player ? player.x + player.w/2 : canvas.width/2;
-  for(const n of nabelFinalClones) {
-    if(!n.alive) continue;
-    // Move toward player
-    const dir = px < n.x+n.w/2 ? -1 : 1;
-    n.x += dir * canvas.width*0.003 * dt;
-    n.cloneTimer -= dt;
-    // Clone
-    if(n.cloneTimer<=0 && nabelFinalClones.filter(c=>c.alive).length < nabelFinalMax) {
-      n.cloneTimer = 300;
-      nabelFinalClones.push({
-        x:n.x+(Math.random()-0.5)*200, y:groundY,
-        w:n.w, h:n.h, hp:10, maxHp:10, alive:true, cloneTimer:300+Math.random()*100
-      });
-    }
-    // Phone throw
-    if(phoneAvailable && n.isMain) {
-      if(!n.phoneCooldown) n.phoneCooldown=0;
-      n.phoneCooldown -= dt;
-      if(n.phoneCooldown <= 0) {
-        n.phoneCooldown = 220;
-        showDialogue('nabel','📱 Telefonu fırlattım!',1200,null);
-        takeDamage(5);
-      }
-    }
-    // Contact damage
-    if(player && Math.abs((n.x+n.w/2)-px)<n.w && player.invincible<=0) {
-      takeDamage(3);
-      player.invincible = 40;
-    }
-  }
-  // When only 1 alive, ensure it has phoneCooldown
-  const aliveClones = nabelFinalClones.filter(c=>c.alive);
-  if(aliveClones.length<=1 && aliveClones.length>0) {
-    aliveClones[0].isMain = true;
-    aliveClones[0].hp = Math.min(aliveClones[0].hp, 20);
-    aliveClones[0].maxHp = 20;
-  }
-}
-
-function drawNabelFinal() {
-  for(const n of nabelFinalClones) {
-    if(!n.alive) continue;
-    ctx.drawImage(IMGS.nabel, n.x, n.y, n.w, n.h);
-    // HP
-    ctx.fillStyle='#333';
-    ctx.fillRect(n.x, n.y-12, n.w, 6);
-    ctx.fillStyle='#00ccff';
-    ctx.fillRect(n.x, n.y-12, n.w*(n.hp/n.maxHp), 6);
-  }
-}
-
-function takeDamage(amount) {
-  if(!player || player.invincible > 30) return;
-  hp -= amount;
-  player.invincible = 40;
-  updateHud();
-  spawnParticle(player.x+player.w/2, player.y+player.h/2, '#ff0000');
-  if(hp <= 0) {
-    hp = 0;
-    updateHud();
-    gameOver(false);
-  }
-}
-
-let wave1ZombieDead = false;
-let wave2ZombiesDead = false;
-let kafkaousFightDone = false;
-
-function checkWaveProgress() {
-  const alive = enemies.filter(e=>e.alive);
-
-  if(gamePhase === 'wave1') {
-    if(alive.length === 0 && enemies.length > 0 && !wave1ZombieDead) {
-      wave1ZombieDead = true;
-      afterWave1();
-    }
-  } else if(gamePhase === 'wave2') {
-    if(alive.length === 0 && enemies.length > 0 && !wave2ZombiesDead) {
-      wave2ZombiesDead = true;
-      afterWave2();
-    }
-  } else if(gamePhase === 'kafkaousFight') {
-    if(alive.length === 0 && enemies.length > 0 && !kafkaousFightDone) {
-      kafkaousFightDone = true;
-      afterKafkaous();
-    }
-  } else if(gamePhase === 'finalWave') {
-    const nabelsAlive = nabelFinalClones.filter(n=>n.alive).length;
-    if(alive.length===0 && nabelsAlive===0) {
-      nabelFinalBoss();
-    }
-  } else if(gamePhase === 'nabelFinal') {
-    if(nabelFinalClones.every(n=>!n.alive)) {
-      gameOver(true);
-    }
-  }
-}
-
-// ========== START ==========
-loadAssets(() => {
-  playSound('analobi', true);
   requestAnimationFrame(loop);
-});
+}
+
+// ============================
+// BUTTONS
+// ============================
+document.getElementById('btnOyna').onclick=()=>startIntro();
+document.getElementById('btnMarket').onclick=()=>alert('Market yakında açılıyor!');
+document.getElementById('btnCik').onclick=()=>window.close();
+
+// ============================
+// BOOT
+// ============================
+loadAll(()=>{playBGM('analobi');requestAnimationFrame(loop);});
 </script>
 </body>
 </html>
